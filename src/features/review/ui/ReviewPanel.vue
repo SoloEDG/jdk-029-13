@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { AudioLines, GitCompareArrows, Headphones, Play, Square } from '@lucide/vue'
-import type { GuideNote, LyricLine, Take } from '../../../shared/document'
+import type { GuideNote, LyricLine, Take, TimeRange } from '../../../shared/document'
 import { clockLabel } from '../../../shared/time'
 import { accuracy } from '../lib/summary'
 
-defineProps<{ takes: Take[]; slots: (Take | undefined)[]; activeId: string | null; selected: LyricLine | null; notes: GuideNote[]; issue: string }>()
-const emit = defineEmits<{ listen: [Take]; choose: [0 | 1, string] }>()
+const props = defineProps<{
+  takes: Take[]
+  slots: (Take | undefined)[]
+  activeId: string | null
+  selected: LyricLine | null
+  notes: GuideNote[]
+  issue: string
+  context: TimeRange
+  transition: 'idle' | 'playing'
+}>()
+const emit = defineEmits<{ listen: [Take]; choose: [0 | 1, string]; transition: [] }>()
 const slotIndices = [0, 1] as const
 </script>
 
@@ -13,7 +22,14 @@ const slotIndices = [0, 1] as const
   <section class="review" aria-labelledby="review-title">
     <h2 class="rail-title" id="review-title"><Headphones :size="17" /> 练习回顾 <span class="mono">{{ takes.length }}</span></h2>
     <div class="review-line">{{ selected?.text ?? '未选择练习句' }}</div>
-    <div v-if="!takes.length" class="empty-takes"><AudioLines :size="23" /><span>本句暂无录音</span></div>
+    <button class="transition-button" :class="{ active: transition === 'playing' }"
+      :aria-pressed="transition === 'playing'" @click="emit('transition')">
+      <Square v-if="transition === 'playing'" :size="13" fill="currentColor" />
+      <Play v-else :size="13" fill="currentColor" />
+      {{ transition === 'playing' ? '停止伴奏过渡' : '复听伴奏过渡' }}
+      <small class="mono">{{ clockLabel(context.start, true) }}–{{ clockLabel(context.end, true) }}</small>
+    </button>
+    <div v-if="!takes.length" class="empty-takes"><AudioLines :size="23" /><span>本练唱窗口暂无录音</span></div>
     <ol v-else class="take-list">
       <li v-for="(take, index) in takes" :key="take.id">
         <button class="icon-button listen-button" :aria-label="`${activeId === take.id ? '停止' : '播放'}录音 ${takes.length - index}`"

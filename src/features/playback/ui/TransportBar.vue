@@ -23,7 +23,7 @@ const emit = defineEmits<{ toggle: []; previous: []; next: []; loop: []; seek: [
       <span class="mono subdued">{{ clockLabel(song.duration) }}</span>
     </div>
     <button class="loop-button" :class="{ enabled: loop }" :aria-pressed="Boolean(loop)" @click="emit('loop')">
-      <Repeat2 :size="17" /> <span>单句循环</span>
+      <Repeat2 :size="17" /> <span>范围循环</span>
     </button>
     <div class="volume-control">
       <button class="icon-button" :aria-label="volume ? '静音伴奏' : '恢复音量'" @click="emit('volume', volume ? 0 : 0.7)">

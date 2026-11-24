@@ -25,7 +25,8 @@
         "id": "tide-3",
         "text": "沿着褪色的街口",
         "start": 12.0,
-        "end": 16.33333
+        "end": 16.33333,
+        "softStart": true
       },
       {
         "id": "tide-4",
@@ -37,7 +38,8 @@
         "id": "tide-5",
         "text": "如果星光还能停留",
         "start": 21.33333,
-        "end": 25.66667
+        "end": 25.66667,
+        "softStart": true
       },
       {
         "id": "tide-6",
@@ -55,7 +57,8 @@
         "id": "tide-8",
         "text": "我再向天亮挥手",
         "start": 35.33333,
-        "end": 39.66667
+        "end": 39.66667,
+        "softStart": true
       }
     ],
     "notes": [
@@ -247,7 +250,8 @@
         "id": "dawn-3",
         "text": "沿着慢下来的光",
         "start": 12.85714,
-        "end": 17.5
+        "end": 17.5,
+        "softStart": true
       },
       {
         "id": "dawn-4",
@@ -271,7 +275,8 @@
         "id": "dawn-7",
         "text": "那些走散的回响",
         "start": 32.85714,
-        "end": 37.5
+        "end": 37.5,
+        "softStart": true
       },
       {
         "id": "dawn-8",

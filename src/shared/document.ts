@@ -3,6 +3,8 @@ export interface TimeRange { start: number; end: number }
 export interface LyricLine extends TimeRange {
   id: string
   text: string
+  /** 句首是否为轻辅音/弱起（如 m、n、l、r、w、y、f、s、x、h） */
+  softStart?: boolean
 }
 
 export interface GuideNote extends TimeRange { midi: number }

@@ -1,21 +1,46 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue'
-import type { LyricLine, Song, Take } from '../../../shared/document'
+import type { LyricLine, Song, Take, TimeRange } from '../../../shared/document'
 import { readTakes, writeTake } from '../lib/archive'
+import { contextRange, takeInWindow } from '../../practice/lib/ranges'
 
-export function useReview(song: Ref<Song>, line: Ref<LyricLine | null>, beforeListen: () => void) {
+type TransitionState = 'idle' | 'playing'
+
+export function useReview(
+  song: Ref<Song>,
+  line: Ref<LyricLine | null>,
+  beforeListen: () => void,
+  practiceRange: Ref<TimeRange>,
+) {
   const takes = shallowRef<Take[]>([])
   const ids = ref<[string | null, string | null]>([null, null])
   const playingId = ref<string | null>(null)
   const position = ref<number | null>(null)
   const issue = ref('')
   const player = new Audio()
+  const backing = new Audio()
   let source: string | null = null
   let current: Take | undefined
   let frame = 0
-  const visible = computed(() => takes.value.filter(take => take.songId === song.value.id && take.lineId === line.value?.id))
+  let transitionFrame = 0
+  const transition = ref<TransitionState>('idle')
+  const transitionPosition = ref<number | null>(null)
+
+  /** 只把练唱窗口内录到的人声归到当前遍：按窗口起止过滤，而不是按整句 */
+  const visible = computed(() => {
+    const window = practiceRange.value
+    return takes.value.filter(take => takeInWindow(take, song.value.id, window))
+  })
   const slots = computed(() => ids.value.map(id => visible.value.find(take => take.id === id)))
 
+  function stopTransition() {
+    backing.pause()
+    cancelAnimationFrame(transitionFrame)
+    transition.value = 'idle'
+    transitionPosition.value = null
+  }
+
   function stop() {
+    stopTransition()
     player.pause()
     cancelAnimationFrame(frame)
     if (source) {
@@ -57,6 +82,32 @@ export function useReview(song: Ref<Song>, line: Ref<LyricLine | null>, beforeLi
     }
   }
 
+  /** 复听实际的伴奏过渡：播放真实伴奏的聆听上下文（窗口两侧各留余量），不循环、不录音 */
+  async function listenTransition() {
+    if (transition.value === 'playing') { stopTransition(); return }
+    const window = practiceRange.value
+    if (!window) return
+    stop()
+    beforeListen()
+    const range = contextRange(window, song.value.duration)
+    backing.src = song.value.audio
+    backing.currentTime = range.start
+    transition.value = 'playing'
+    transitionPosition.value = range.start
+    try {
+      await backing.play()
+      const track = () => {
+        if (backing.paused || backing.currentTime >= range.end) { stopTransition(); return }
+        transitionPosition.value = backing.currentTime
+        transitionFrame = requestAnimationFrame(track)
+      }
+      track()
+    } catch {
+      stopTransition()
+      issue.value = '无法播放伴奏过渡。'
+    }
+  }
+
   function choose(slot: 0 | 1, id: string) {
     const next = [...ids.value] as typeof ids.value
     const peer = slot === 0 ? 1 : 0
@@ -86,6 +137,14 @@ export function useReview(song: Ref<Song>, line: Ref<LyricLine | null>, beforeLi
     }
   })
   player.addEventListener('ended', stop)
-  onBeforeUnmount(() => { player.removeEventListener('ended', stop); stop() })
-  return { visible, slots, playingId, position, issue, save, choose, listen, stop }
+  backing.addEventListener('ended', stopTransition)
+  onBeforeUnmount(() => {
+    player.removeEventListener('ended', stop)
+    backing.removeEventListener('ended', stopTransition)
+    stop()
+  })
+  return {
+    visible, slots, playingId, position, issue, transition, transitionPosition,
+    save, choose, listen, listenTransition, stopTransition, stop,
+  }
 }

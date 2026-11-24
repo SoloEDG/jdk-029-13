@@ -5,11 +5,12 @@ import { LyricStage, PhraseList } from '../features/lyrics'
 import { RecordControls } from '../features/capture'
 import { PitchPanel } from '../features/pitch'
 import { ReviewPanel } from '../features/review'
+import { RangeEditor, notesInRange } from '../features/practice'
 import { useWorkspace } from './useWorkspace'
 
 const {
-  transport, lyrics, pitch, review, capture, graphRange, graphPosition,
-  selectLine, adjacent, selectSong, seek, toggleLoop, togglePlay, toggleRecording, listen,
+  transport, lyrics, pitch, review, capture, loopRange, graphRange, graphPosition,
+  selectLine, adjacent, selectSong, seek, toggleLoop, togglePlay, toggleRecording, listen, listenTransition,
 } = useWorkspace()
 </script>
 
@@ -29,6 +30,9 @@ const {
       <SongHeading :song="transport.song.value" />
       <LyricStage :selected="lyrics.selected.value" :active="lyrics.active.value" :upcoming="lyrics.upcoming.value"
         :playing="transport.isPlaying.value" :progress="lyrics.lineProgress.value" />
+      <RangeEditor :duration="transport.song.value.duration" :effective="loopRange.effective.value"
+        :pending-range="loopRange.pending.value" :context="loopRange.context.value" :seam="loopRange.seam.value"
+        :lines="loopRange.windowLines.value" @drag="loopRange.drag" @snap="loopRange.snap" />
       <PitchPanel :notes="transport.song.value.notes" :position="graphPosition" :range="graphRange"
         :latest="capture.status.value === 'recording' ? pitch.latest.value : null"
         :live="capture.status.value === 'recording' ? pitch.points.value : []"
@@ -42,8 +46,9 @@ const {
     </div>
     <aside class="right-rail">
       <ReviewPanel :takes="review.visible.value" :slots="review.slots.value" :active-id="review.playingId.value"
-        :selected="lyrics.selected.value" :notes="transport.song.value.notes" :issue="review.issue.value"
-        @listen="listen" @choose="review.choose" />
+        :selected="lyrics.selected.value" :notes="notesInRange(transport.song.value.notes, loopRange.effective.value)"
+        :issue="review.issue.value" :context="loopRange.context.value" :transition="review.transition.value"
+        @listen="listen" @choose="review.choose" @transition="listenTransition" />
     </aside>
   </main>
 </template>
